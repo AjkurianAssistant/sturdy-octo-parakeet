@@ -98,10 +98,6 @@ async function fetchTelemetry() {
         state.lastUpdated = new Date();
         state.status = determineSystemStatus();
 
-        if (state.isInitialLoad) {
-            state.isInitialLoad = false;
-        }
-
     } catch (error) {
         console.error('Failed to fetch telemetry:', error);
 
@@ -111,6 +107,10 @@ async function fetchTelemetry() {
         } else {
              // If we have cached data, just show alert/offline banner but keep data visible
              state.status = 'OFFLINE_CACHED';
+        }
+    } finally {
+        if (state.isInitialLoad) {
+            state.isInitialLoad = false;
         }
     }
 }
