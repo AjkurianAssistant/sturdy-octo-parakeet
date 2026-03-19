@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-950 text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project HELIOS - Astronomical Command Center</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'matrix-green': '#00FF41',
+                        'neon-red': '#FF3131',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+        body {
+            /* Smooth transitions for glow states */
+            transition: all 0.3s ease;
+        }
+
+        .glow-safe {
+            text-shadow: 0 0 10px #00FF41, 0 0 20px #00FF41;
+            color: #00FF41;
+        }
+
+        .glow-alert {
+            text-shadow: 0 0 10px #FF3131, 0 0 20px #FF3131;
+            color: #FF3131;
+        }
+
+        .glow-offline {
+            text-shadow: 0 0 10px #FACC15, 0 0 20px #FACC15;
+            color: #FACC15;
+        }
+
+        .border-safe {
+            border-color: #00FF41;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+        }
+
+        .border-alert {
+            border-color: #FF3131;
+            box-shadow: 0 0 15px rgba(255, 49, 49, 0.2);
+        }
+
+        /* Chromecast optimized sizes */
+        .text-huge { font-size: 5rem; line-height: 1; }
+        .text-macro { font-size: 3.5rem; line-height: 1.1; }
+    </style>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Day.js -->
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/relativeTime.js"></script>
+</head>
+<body class="h-screen w-screen overflow-hidden p-8 flex flex-col font-sans">
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+        <div>
+            <h1 class="text-macro font-extrabold tracking-tight">HELIOS COMMAND</h1>
+            <p class="text-2xl text-gray-400 font-mono mt-2" id="current-time">00:00:00 UTC</p>
+        </div>
+        <div class="text-right flex flex-col items-end">
+            <div id="system-status" class="text-3xl font-bold px-6 py-2 rounded border-2 border-safe glow-safe uppercase mb-2">
+                SYSTEM NOMINAL
+            </div>
+            <p class="text-xl text-gray-400 font-mono">Last updated: <span id="last-updated">--</span></p>
+        </div>
+    </header>
+
+    <!-- UI States: Loading / Offline -->
+    <div id="loading-state" class="absolute inset-0 bg-gray-950 flex flex-col justify-center items-center z-50">
+        <h2 class="text-huge font-bold text-gray-300 animate-pulse">ACQUIRING TELEMETRY...</h2>
+        <p class="text-3xl text-gray-500 mt-4 font-mono">Connecting to NASA DONKI & NeoWs</p>
+    </div>
+
+    <div id="offline-state" class="hidden absolute inset-0 bg-gray-950 bg-opacity-90 flex flex-col justify-center items-center z-40 backdrop-blur-sm">
+        <h2 class="text-huge font-bold glow-offline mb-4">API OFFLINE / RATE LIMITED</h2>
+        <p class="text-3xl text-gray-300 font-mono mb-8">Attempting to re-establish connection in 5 minutes...</p>
+        <p class="text-2xl text-gray-500">Operating on cached data if available.</p>
+    </div>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 grid grid-cols-2 gap-8 min-h-0">
+        <!-- Solar Flares -->
+        <section class="flex flex-col bg-gray-900 border-2 border-gray-800 rounded-xl p-6" id="solar-flare-container">
+            <h2 class="text-4xl font-bold mb-6 text-gray-200 uppercase tracking-widest border-b border-gray-800 pb-2">Solar Radiation</h2>
+
+            <div class="flex-1 flex flex-col justify-center items-center">
+                <div class="text-center mb-8">
+                    <p class="text-2xl text-gray-400 mb-2 font-mono">Highest Recent Flare Class</p>
+                    <div id="flare-class" class="text-huge font-extrabold glow-safe">
+                        --
+                    </div>
+                </div>
+
+                <div class="w-full mt-4">
+                    <h3 class="text-2xl text-gray-400 mb-4 font-mono">Recent Activity</h3>
+                    <ul id="flare-list" class="space-y-4 text-2xl font-mono">
+                        <!-- Populated via JS -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Near Earth Objects (Asteroids) -->
+        <section class="flex flex-col bg-gray-900 border-2 border-gray-800 rounded-xl p-6" id="neo-container">
+            <h2 class="text-4xl font-bold mb-6 text-gray-200 uppercase tracking-widest border-b border-gray-800 pb-2">Near Earth Objects</h2>
+
+            <div class="flex-1 flex flex-col min-h-0">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gray-800 p-4 rounded text-center">
+                        <p class="text-xl text-gray-400 font-mono">Tracked Today</p>
+                        <p id="neo-count" class="text-4xl font-bold mt-2">0</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded text-center">
+                        <p class="text-xl text-gray-400 font-mono">Potentially Hazardous</p>
+                        <p id="neo-hazard-count" class="text-4xl font-bold mt-2 glow-safe">0</p>
+                    </div>
+                </div>
+
+                <div class="flex-1 min-h-0 relative">
+                    <!-- Chart.js Canvas -->
+                    <canvas id="neoChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Scripts -->
+    <script src="api-client.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
