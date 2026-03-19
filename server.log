@@ -1,4 +1,0 @@
-127.0.0.1 - - [19/Mar/2026 17:02:06] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [19/Mar/2026 17:02:48] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [19/Mar/2026 17:02:48] "GET /api-client.js HTTP/1.1" 200 -
-127.0.0.1 - - [19/Mar/2026 17:02:48] "GET /dashboard.js HTTP/1.1" 200 -
